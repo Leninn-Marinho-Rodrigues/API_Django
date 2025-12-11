@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Tarefas - Projeto Integrador</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Cursor de 'mão aberta' para indicar que pode arrastar */
+        .task-card { cursor: grab; transition: all 0.2s ease; user-select: none; }
+        .task-card:active { cursor: grabbing; }
+        
+        /* Estilos visuais quando está arrastando */
+        .dragging { opacity: 0.5; transform: scale(0.95); border: 2px dashed #6366f1; }
+        /* Área de destino destacada */
+        .drag-over { background-color: #eef2ff; border: 2px dashed #818cf8; border-radius: 0.75rem; }
+
+        .border-left-todo { border-left: 5px solid #ef4444; }
+        .border-left-doing { border-left: 5px solid #f59e0b; }
+        .border-left-done { border-left: 5px solid #22c55e; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+        
+        /* Estilo para barra de rolagem horizontal dos filtros */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800">
+    <!-- Navbar -->
+    <nav class="bg-indigo-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-project-diagram text-2xl text-indigo-300"></i>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Gestão de Tarefas</h1>
+                    <p class="text-xs text-indigo-200">Projeto Django Integrador</p>
+                </div>
+            </div>
+            <button onclick="openModal()" class="bg-indigo-500 hover:bg-indigo-400 text-white px-5 py-2 rounded-lg font-semibold transition shadow-md flex items-center gap-2">
+                <i class="fas fa-plus-circle"></i> Nova Demanda
+            </button>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        
+        <!-- DASHBOARD DE ESTATÍSTICAS -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-gray-500 font-bold uppercase">Total Geral</p>
+                    <p class="text-2xl font-bold text-indigo-600" id="stat-total">0</p>
+                </div>
+                <div class="bg-indigo-50 p-3 rounded-full text-indigo-500"><i class="fas fa-layer-group"></i></div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-gray-500 font-bold uppercase">A Fazer</p>
+                    <p class="text-2xl font-bold text-red-500" id="stat-todo">0</p>
+                </div>
+                <div class="bg-red-50 p-3 rounded-full text-red-500"><i class="fas fa-clipboard-list"></i></div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-gray-500 font-bold uppercase">Fazendo</p>
+                    <p class="text-2xl font-bold text-yellow-500" id="stat-doing">0</p>
+                </div>
+                <div class="bg-yellow-50 p-3 rounded-full text-yellow-500"><i class="fas fa-cog"></i></div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-gray-500 font-bold uppercase">Concluídos</p>
+                    <p class="text-2xl font-bold text-green-500" id="stat-done">0</p>
+                </div>
+                <div class="bg-green-50 p-3 rounded-full text-green-500"><i class="fas fa-check-double"></i></div>
+            </div>
+        </div>
+
+        <!-- BARRA DE FILTROS -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-8">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                
+                <!-- Pesquisa Texto -->
+                <div class="relative w-full md:w-1/3">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="filterSearch" onkeyup="applyFilters()" 
+                           placeholder="Pesquisar por título ou descrição..." 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                </div>
+
+                <!-- Filtro de Data Específica -->
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <label class="text-sm text-gray-600 font-medium whitespace-nowrap"><i class="far fa-calendar-alt mr-1"></i> Data:</label>
+                    <input type="date" id="filterDate" onchange="applyFilters()" 
+                           class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm w-full">
+                    <button onclick="clearDateFilter()" class="text-gray-400 hover:text-red-500 transition px-2" title="Limpar Data">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sugestões de Meses (Timeline) -->
+            <div class="mt-4 border-t border-gray-100 pt-3">
+                <p class="text-xs text-gray-400 mb-2 font-semibold uppercase">Filtrar por Mês (Sugestões)</p>
+                <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-2" id="month-filters">
+                    <!-- Botões de meses serão gerados via JS -->
+                    <span class="text-sm text-gray-400 italic">Carregando datas...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUADRO KANBAN -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 h-full min-h-[500px]">
+            
+            <!-- Coluna: A Fazer -->
+            <div class="bg-gray-50 rounded-xl p-5 shadow-sm border border-gray-200 flex flex-col h-full transition-colors"
+                 ondrop="drop(event, 'TODO')" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)">
+                
+                <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-200 pointer-events-none">
+                    <h2 class="font-bold text-gray-700 flex items-center gap-2 text-lg">
+                        <i class="fas fa-clipboard-list text-red-500 bg-red-100 p-2 rounded-lg"></i> A Fazer
+                    </h2>
+                    <span id="count-todo" class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold">0</span>
+                </div>
+                <div id="col-todo" class="space-y-4 flex-1 min-h-[200px] h-full pointer-events-none"></div>
+            </div>
+
+            <!-- Coluna: Em Andamento -->
+            <div class="bg-gray-50 rounded-xl p-5 shadow-sm border border-gray-200 flex flex-col h-full transition-colors"
+                 ondrop="drop(event, 'DOING')" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)">
+                
+                <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-200 pointer-events-none">
+                    <h2 class="font-bold text-gray-700 flex items-center gap-2 text-lg">
+                        <i class="fas fa-cog fa-spin text-yellow-500 bg-yellow-100 p-2 rounded-lg hover:rotate-90 transition"></i> Fazendo
+                    </h2>
+                    <span id="count-doing" class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-bold">0</span>
+                </div>
+                <div id="col-doing" class="space-y-4 flex-1 min-h-[200px] h-full pointer-events-none"></div>
+            </div>
+
+            <!-- Coluna: Concluído -->
+            <div class="bg-gray-50 rounded-xl p-5 shadow-sm border border-gray-200 flex flex-col h-full transition-colors"
+                 ondrop="drop(event, 'DONE')" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)">
+                
+                <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-200 pointer-events-none">
+                    <h2 class="font-bold text-gray-700 flex items-center gap-2 text-lg">
+                        <i class="fas fa-check-double text-green-500 bg-green-100 p-2 rounded-lg"></i> Concluído
+                    </h2>
+                    <span id="count-done" class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold">0</span>
+                </div>
+                <div id="col-done" class="space-y-4 flex-1 min-h-[200px] h-full pointer-events-none"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form (Mantido Igual) -->
+    <div id="taskModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 animate-fade-in relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                <i class="far fa-edit text-indigo-600"></i> <span id="modalTitle">Nova Demanda</span>
+            </h3>
+            
+            <form id="taskForm" onsubmit="saveTask(event)">
+                <input type="hidden" id="taskId">
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Título</label>
+                        <input type="text" id="taskTitle" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Descrição</label>
+                        <textarea id="taskDesc" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Prazo</label>
+                            <input type="datetime-local" id="taskDeadline" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Status</label>
+                            <select id="taskStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                                <option value="TODO">📝 A Fazer</option>
+                                <option value="DOING">⚙️ Fazendo</option>
+                                <option value="DONE">✅ Concluído</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-end gap-3 border-t border-gray-100 pt-4">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium shadow-md transition">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/tarefas/';
+        let draggedTaskId = null;
+        let allTasks = []; // Fonte da verdade
+        let filteredMonth = null; // Filtro de mês ativo
+
+        // CSRF Token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        async function fetchTasks() {
+            try {
+                const res = await fetch(API_URL);
+                if(!res.ok) throw new Error("Erro na API");
+                allTasks = await res.json();
+                generateMonthFilters(allTasks); // Gera os filtros de mês
+                applyFilters(); // Renderiza com os filtros atuais
+            } catch (e) { console.error(e); }
+        }
+
+        // --- SISTEMA DE FILTROS ---
+
+        function generateMonthFilters(tasks) {
+            const monthContainer = document.getElementById('month-filters');
+            monthContainer.innerHTML = `<button onclick="setMonthFilter(null)" class="px-3 py-1 rounded-full text-xs font-bold transition ${filteredMonth === null ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">Todos</button>`;
+            
+            // Extrai meses únicos das tarefas
+            const months = new Set();
+            tasks.forEach(task => {
+                const date = new Date(task.prazo);
+                const monthKey = `${date.getFullYear()}-${date.getMonth()}`; // Ex: 2025-11
+                months.add(monthKey);
+            });
+
+            // Ordena e cria botões
+            Array.from(months).sort().forEach(key => {
+                const [year, month] = key.split('-');
+                const dateObj = new Date(year, month);
+                const label = dateObj.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+                
+                const isActive = filteredMonth === key;
+                const btnClass = isActive 
+                    ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' 
+                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50';
+
+                monthContainer.innerHTML += `
+                    <button onclick="setMonthFilter('${key}')" 
+                            class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition border ${btnClass}">
+                        ${capitalizedLabel}
+                    </button>`;
+            });
+        }
+
+        function setMonthFilter(monthKey) {
+            filteredMonth = monthKey;
+            // Limpa o filtro de data específica se selecionar um mês
+            if(monthKey) document.getElementById('filterDate').value = '';
+            generateMonthFilters(allTasks); // Regenera para atualizar cores
+            applyFilters();
+        }
+
+        function clearDateFilter() {
+            document.getElementById('filterDate').value = '';
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchText = document.getElementById('filterSearch').value.toLowerCase();
+            const dateValue = document.getElementById('filterDate').value;
+
+            const filtered = allTasks.filter(task => {
+                // Filtro Texto
+                const matchText = task.titulo.toLowerCase().includes(searchText) || 
+                                  (task.descricao && task.descricao.toLowerCase().includes(searchText));
+                
+                // Filtro Data Específica
+                let matchDate = true;
+                if (dateValue) {
+                    const taskDate = task.prazo.split('T')[0];
+                    matchDate = taskDate === dateValue;
+                }
+
+                // Filtro Mês
+                let matchMonth = true;
+                if (filteredMonth && !dateValue) {
+                    const d = new Date(task.prazo);
+                    const key = `${d.getFullYear()}-${d.getMonth()}`;
+                    matchMonth = key === filteredMonth;
+                }
+
+                return matchText && matchDate && matchMonth;
+            });
+
+            renderBoard(filtered);
+            updateStats(filtered);
+        }
+
+        function updateStats(tasks) {
+            const counts = { TOTAL: tasks.length, TODO: 0, DOING: 0, DONE: 0 };
+            tasks.forEach(t => counts[t.status]++);
+
+            document.getElementById('stat-total').innerText = counts.TOTAL;
+            document.getElementById('stat-todo').innerText = counts.TODO;
+            document.getElementById('stat-doing').innerText = counts.DOING;
+            document.getElementById('stat-done').innerText = counts.DONE;
+        }
+
+        // --- RENDERIZAÇÃO (Mantida, mas chama calculateTimeStatus) ---
+
+        function calculateTimeStatus(deadlineStr, status) {
+            if (status === 'DONE') {
+                return { text: 'Concluído', class: 'text-green-600 bg-green-50 border-green-100' };
+            }
+            const now = new Date();
+            const deadline = new Date(deadlineStr);
+            const diffMs = deadline - now;
+            const isLate = diffMs < 0;
+            const absDiff = Math.abs(diffMs);
+            const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+            let timeString = days > 0 ? `${days}d ${hours}h` : `${hours}h`;
+            if (days === 0 && hours === 0) timeString = `${Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60))}m`;
+
+            if (isLate) return { text: `⚠️ Atrasado há ${timeString}`, class: 'text-red-700 bg-red-50 border-red-100 font-bold' };
+            const urgencyClass = days < 1 ? 'text-orange-700 bg-orange-50 border-orange-100 font-semibold' : 'text-blue-700 bg-blue-50 border-blue-100';
+            return { text: `⏳ Restam ${timeString}`, class: urgencyClass };
+        }
+
+        function renderBoard(tasks) {
+            ['todo', 'doing', 'done'].forEach(s => {
+                document.getElementById(`col-${s}`).innerHTML = '';
+                document.getElementById(`count-${s}`).innerText = '0';
+            });
+            
+            const counts = { TODO: 0, DOING: 0, DONE: 0 };
+            
+            tasks.forEach(task => {
+                counts[task.status]++;
+                const col = document.getElementById(`col-${task.status.toLowerCase()}`);
+                const createdDate = new Date(task.criado_em).toLocaleDateString('pt-BR');
+                const deadlineDate = new Date(task.prazo).toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+                const timeStatus = calculateTimeStatus(task.prazo, task.status);
+                
+                let borderClass = 'border-left-todo';
+                if(task.status === 'DOING') borderClass = 'border-left-doing';
+                if(task.status === 'DONE') borderClass = 'border-left-done';
+
+                col.innerHTML += `
+                    <div draggable="true" ondragstart="drag(event, ${task.id})"
+                         class="bg-white p-4 rounded-lg shadow-sm task-card relative group ${borderClass} mb-3 flex flex-col gap-2 pointer-events-auto z-10 border border-gray-100">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-bold text-gray-800 text-md leading-tight w-4/5 pointer-events-none">${task.titulo}</h4>
+                            <div class="flex gap-1 z-20">
+                                <button onmousedown="event.stopPropagation()" onclick="openEditModal(${task.id})" class="text-gray-300 hover:text-blue-500 transition p-1 hover:bg-gray-50 rounded"><i class="fas fa-edit"></i></button>
+                                <button onmousedown="event.stopPropagation()" onclick="deleteTask(${task.id})" class="text-gray-300 hover:text-red-500 transition p-1 hover:bg-red-50 rounded"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 line-clamp-2 pointer-events-none">${task.descricao || 'Sem descrição.'}</p>
+                        <div class="text-[10px] text-gray-400 mb-1 flex items-center gap-1 pointer-events-none"><i class="far fa-calendar-plus"></i> Criado: ${createdDate}</div>
+                        <div class="text-[11px] px-2 py-1 rounded border mb-2 w-fit ${timeStatus.class} flex items-center gap-1 pointer-events-none">${timeStatus.text}</div>
+                        <div class="flex justify-between items-end border-t border-gray-100 pt-2 mt-auto pointer-events-none">
+                            <div class="flex flex-col"><span class="text-[10px] text-gray-400 font-semibold uppercase">Prazo</span><span class="text-gray-600 text-xs flex items-center gap-1 font-medium"><i class="far fa-clock"></i> ${deadlineDate}</span></div>
+                            <div class="flex items-center gap-2 pointer-events-auto">
+                                <div class="flex gap-1" onmousedown="event.stopPropagation()">${getNextBtn(task)}</div>
+                                <div class="text-gray-300 cursor-grab active:cursor-grabbing"><i class="fas fa-grip-vertical"></i></div>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            Object.keys(counts).forEach(k => document.getElementById(`count-${k.toLowerCase()}`).innerText = counts[k]);
+        }
+
+        function getNextBtn(task) {
+            if (task.status === 'TODO') return `<button onclick="updateStatus(${task.id}, 'DOING')" class="text-[10px] bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition">Iniciar <i class="fas fa-play ml-1"></i></button>`;
+            if (task.status === 'DOING') return `<button onclick="updateStatus(${task.id}, 'DONE')" class="text-[10px] bg-green-50 text-green-600 hover:bg-green-100 px-2 py-1 rounded border border-green-200 transition">Concluir <i class="fas fa-check ml-1"></i></button>`;
+            return `<span class="text-green-600 text-[10px] font-bold bg-green-50 px-2 py-1 rounded"><i class="fas fa-check-circle"></i> OK</span>`;
+        }
+
+        // --- Drag & Drop (Mantido) ---
+        function drag(ev, id) { draggedTaskId = id; ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", id); setTimeout(() => ev.target.classList.add('dragging'), 0); }
+        function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+        function leaveDrop(ev) { ev.currentTarget.classList.remove('drag-over'); }
+        async function drop(ev, newStatus) {
+            ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
+            document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+            if (draggedTaskId) { await updateStatus(draggedTaskId, newStatus); draggedTaskId = null; }
+        }
+
+        // --- CRUD (Mantido) ---
+        function openEditModal(id) {
+            const task = allTasks.find(t => t.id === id);
+            if (!task) return;
+            document.getElementById('taskId').value = task.id;
+            document.getElementById('taskTitle').value = task.titulo;
+            document.getElementById('taskDesc').value = task.descricao;
+            document.getElementById('taskDeadline').value = new Date(task.prazo).toISOString().slice(0, 16);
+            document.getElementById('taskStatus').value = task.status;
+            document.getElementById('modalTitle').innerText = "Editar Demanda";
+            document.getElementById('taskModal').classList.remove('hidden');
+        }
+
+        async function saveTask(e) {
+            e.preventDefault();
+            const id = document.getElementById('taskId').value;
+            const data = {
+                titulo: document.getElementById('taskTitle').value,
+                descricao: document.getElementById('taskDesc').value,
+                prazo: document.getElementById('taskDeadline').value,
+                status: document.getElementById('taskStatus').value
+            };
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}${id}/` : API_URL;
+            await fetch(url, { method: method, headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken }, body: JSON.stringify(data) });
+            closeModal(); fetchTasks();
+        }
+
+        async function updateStatus(id, status) {
+            await fetch(`${API_URL}${id}/`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken }, body: JSON.stringify({status}) });
+            fetchTasks();
+        }
+
+        async function deleteTask(id) {
+            if(confirm('Tem certeza?')) {
+                await fetch(`${API_URL}${id}/`, { method: 'DELETE', headers: { 'X-CSRFToken': csrftoken } });
+                fetchTasks();
+            }
+        }
+
+        function openModal() { document.getElementById('taskId').value = ''; document.getElementById('taskForm').reset(); document.getElementById('modalTitle').innerText = "Nova Demanda"; document.getElementById('taskModal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('taskModal').classList.add('hidden'); }
+
+        fetchTasks();
+    </script>
+</body>
+</html>
