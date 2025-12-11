@@ -2,34 +2,17 @@ Design Team Flow - Sistema Kanban com Django
 
 Índice
 
-Visão Geral
-
-Funcionalidades
-
 Configuração do Ambiente
 
 Estrutura do Projeto
+
+Implementação das Funcionalidades
 
 Endpoints da API
 
 Execução Local
 
 Deploy
-
-Visão Geral
-
-Este é um sistema de Gestão de Tarefas (Kanban) desenvolvido especificamente para times de design. Ele permite o gerenciamento visual de demandas com recursos modernos como "Arrastar e Soltar", categorização por Tags coloridas e estatísticas em tempo real.
-
-O projeto utiliza Django no backend para servir uma API RESTful, enquanto o frontend consome esses dados para renderizar uma interface reativa estilizada com TailwindCSS.
-
-Funcionalidades
-
-✅ Quadro Kanban Interativo: Mova tarefas entre "Backlog", "Em Produção" e "Finalizado" arrastando os cartões.
-✅ Sistema de Tags Inteligente: Classifique demandas (ex: Urgente, Instagram, TikTok) com cores automáticas.
-✅ Dashboard de Métricas: Contadores em tempo real no topo da página.
-✅ Filtros Avançados: Pesquise por texto, tags específicas, data exata ou navegue por mês.
-✅ Atualização em Tempo Real: O quadro se atualiza automaticamente (polling) quando outros usuários fazem alterações.
-✅ Interface Responsiva: Funciona bem em desktops e dispositivos móveis.
 
 Configuração do Ambiente
 
@@ -42,8 +25,8 @@ python --version
 
 2. Clonar o repositório
 
-git clone [https://github.com/seu-usuario/seu-repositorio.git](https://github.com/seu-usuario/seu-repositorio.git)
-cd seu-repositorio
+git clone [https://github.com/seu-usuario/API_Django.git](https://github.com/seu-usuario/API_Django.git)
+cd API_Django
 
 
 3. Criar Ambiente Virtual
@@ -60,14 +43,18 @@ python -m venv venv
 source venv/bin/activate
 
 
+Nota: Você deve ver o nome do ambiente virtual (venv) no início da linha de comando quando estiver ativo.
+
 4. Instalar Dependências
+
+Em vez de Poetry, este projeto utiliza o pip padrão com um arquivo de requisitos para facilitar o deploy no Render.
 
 pip install -r requirements.txt
 
 
 Estrutura do Projeto
 
-A organização segue as boas práticas do Django (MTV):
+A organização segue as boas práticas do Django (MTV), separando configurações globais da lógica de negócio.
 
 projeto_django/
 ├── .venv/                    # Ambiente Virtual
@@ -75,12 +62,12 @@ projeto_django/
 ├── manage.py                 # Utilitário de comando do Django
 ├── requirements.txt          # Lista de bibliotecas
 ├── build.sh                  # Script de deploy para o Render
-├── setup/                    # (Projeto Principal)
+├── setup/                    # (Pasta do PROJETO Principal)
 │   ├── __init__.py
 │   ├── settings.py           # Configurações globais (Apps, DB, Middleware)
 │   ├── urls.py               # Rotas principais (Admin, API, Home)
 │   └── wsgi.py               # Entrada para servidor web
-└── apps/                     # (Pasta de Aplicações)
+└── apps/                     # (Pasta de APLICAÇÕES)
     └── core/                 # (App Principal: Gestão de Tarefas)
         ├── templates/        # Arquivos HTML
         │   └── interface_kanban.html
@@ -93,21 +80,83 @@ projeto_django/
 
 setup/ - Pasta do PROJETO Django
 
-Esta é a pasta de configuração que "amarra" todo o sistema.
+Esta é a pasta principal do projeto Django que contém:
 
-settings.py: Define o banco de dados, apps instalados (apps.core, rest_framework) e configurações de segurança (CSRF, CORS).
+settings.py - Configurações globais, segurança (CSRF, CORS) e apps instalados.
 
-urls.py: Define que a rota /api/ vai para o nosso app e a rota / (raiz) carrega o template do Kanban.
+urls.py - Roteamento geral (Define que / carrega o Kanban e /api/ carrega os dados).
 
 apps/core/ - Pasta da APLICAÇÃO
 
-Onde a lógica de negócio reside.
+Esta é a aplicação específica que contém a lógica do Kanban:
 
-models.py: Define a estrutura da Tarefa (título, descrição, prazo, tags, status).
+models.py - Estrutura de dados (Tarefas, Tags, Prazos).
 
-views.py: Utiliza ModelViewSet do Django REST Framework para criar automaticamente as operações de CRUD (Criar, Ler, Atualizar, Deletar).
+views.py - Lógica da API REST (GET, POST, PUT, DELETE).
 
-templates/: Contém o arquivo HTML único que roda todo o frontend via JavaScript (fetch API).
+templates/ - Interface visual (HTML + TailwindCSS + JS).
+
+Implementação das Funcionalidades
+
+1. Configurar settings.py
+
+Editamos setup/settings.py para incluir as apps e configurações de segurança para o deploy:
+
+INSTALLED_APPS = [
+    # ... apps padrão ...
+    'rest_framework', # API
+    'corsheaders',    # Segurança de acesso
+    'apps.core',      # Nossa aplicação
+]
+
+# Configuração para arquivos estáticos no Render
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+
+2. Criar Modelo (apps/core/models.py)
+
+O modelo Tarefa suporta tags e status para o Kanban:
+
+from django.db import models
+
+class Tarefa(models.Model):
+    STATUS_CHOICES = [
+        ('TODO', 'A Fazer'),
+        ('DOING', 'Em Andamento'),
+        ('DONE', 'Concluído'),
+    ]
+    titulo = models.CharField(max_length=200)
+    descricao = models.TextField(blank=True, null=True)
+    tags = models.CharField(max_length=255, blank=True, null=True) # Ex: "Urgente, Instagram"
+    prazo = models.DateTimeField()
+    status = models.CharField(max_length=5, choices=STATUS_CHOICES, default='TODO')
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+
+3. Criar Serializer (apps/core/serializers.py)
+
+Converte o modelo Python para JSON, permitindo que o Frontend (JavaScript) entenda os dados.
+
+from rest_framework import serializers
+from .models import Tarefa
+
+class TarefaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tarefa
+        fields = '__all__'
+
+
+4. Interface Kanban (Templates)
+
+O arquivo interface_kanban.html implementa:
+
+Drag & Drop: API HTML5 nativa para arrastar cartões.
+
+Polling: Atualização automática a cada 3 segundos.
+
+Filtros: Busca por texto, data e navegação por mês.
+
+Design: Estilização responsiva com TailwindCSS.
 
 Endpoints da API
 
@@ -135,7 +184,7 @@ GET
 
 /api/tarefas/{id}/
 
-Detalhes de uma tarefa
+Detalhes de uma tarefa específica
 
 PUT
 
@@ -157,9 +206,9 @@ Remove uma tarefa
 
 Execução Local
 
-1. Aplicar Migrações
+1. Aplicar migrações
 
-Cria as tabelas no banco de dados SQLite:
+Cria o banco de dados SQLite localmente:
 
 python manage.py makemigrations
 python manage.py migrate
@@ -172,12 +221,12 @@ Para acessar o painel administrativo (/admin):
 python manage.py createsuperuser
 
 
-3. Rodar o Servidor
+3. Executar servidor
 
 python manage.py runserver
 
 
-Acesse no navegador:
+4. Acessar o site
 
 Kanban: http://127.0.0.1:8000/
 
@@ -189,10 +238,18 @@ O projeto está configurado para deploy automático na plataforma Render.
 
 Arquivos de Configuração
 
-requirements.txt: Lista o gunicorn (servidor de produção).
+requirements.txt: Lista o gunicorn (servidor de produção) e bibliotecas.
 
 build.sh: Script que instala dependências e roda migrações automaticamente no servidor.
 
-settings.py: Configurado com STATIC_ROOT para servir arquivos estáticos corretamente.
+#!/usr/bin/env bash
+# exit on error
+set -o errexit
 
-Desenvolvido como Projeto Integrador de Desenvolvimento Web
+pip install -r requirements.txt
+
+python manage.py collectstatic --no-input
+python manage.py migrate
+
+
+Desenvolvido como Projeto Integrador de Desenvolvimento Web.
