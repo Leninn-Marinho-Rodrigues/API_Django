@@ -402,6 +402,21 @@
         function closeModal() { document.getElementById('taskModal').classList.add('hidden'); }
 
         fetchTasks();
+
+        // --- POLLING AUTOMÁTICO (ATUALIZAÇÃO SEM REFRESH) ---
+        function startPolling() {
+            setInterval(async () => {
+                // Só atualiza se NÃO estiver arrastando E o modal estiver fechado
+                // Isso evita bugs visuais enquanto o usuário interage
+                const isModalOpen = !document.getElementById('taskModal').classList.contains('hidden');
+                
+                if (!draggedTaskId && !isModalOpen) {
+                    await fetchTasks();
+                }
+            }, 3000); // Verifica a cada 3 segundos
+        }
+        
+        startPolling();
     </script>
 </body>
 </html>
