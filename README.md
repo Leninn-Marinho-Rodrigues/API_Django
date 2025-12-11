@@ -1,5 +1,24 @@
 # Design Team Flow — Sistema Kanban com Django
 
+<div align="center">
+
+<!-- Tecnologias & Ferramentas -->
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white)
+![DRF](https://img.shields.io/badge/DRF-0A0A0A?style=for-the-badge&logo=django&logoColor=white)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=000)
+![Java](https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=java&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![pip](https://img.shields.io/badge/pip-3775A9?style=for-the-badge&logo=pypi&logoColor=white)
+![Gunicorn](https://img.shields.io/badge/Gunicorn-499848?style=for-the-badge&logo=gunicorn&logoColor=white)
+![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=000)
+
+</div>
+
 > Projeto integrador de Desenvolvimento Web: um Kanban simples, responsivo e com API REST em Django + DRF.
 
 **Sumário**
@@ -241,5 +260,5 @@ python manage.py migrate
 
 ## Referências
 
-- README do professor (organização por seções e sumário): https://github.com/claulis/Py/blob/main/DJ/readme.md  
-- Boas práticas de README (estrutura e seções úteis): https://realpython.com/readme-python-project/
+- Badges gerados via **Shields.io** (logos via Simple Icons e parâmetro `logo`): https://shields.io/docs/logos ; exemplos de uso e estilos: https://shields.io/badges/static-badge  
+- Repositório do professor (organização de conteúdo por seções): https://github.com/claulis/Py  
