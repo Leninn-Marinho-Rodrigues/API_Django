@@ -1,17 +1,10 @@
-# Design Team Flow — Sistema Kanban com Django
+# 🧩 Design Team Flow — API REST com Django
 
 <div align="center">
-
-<!-- Tecnologias & Ferramentas -->
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white)
 ![DRF](https://img.shields.io/badge/DRF-0A0A0A?style=for-the-badge&logo=django&logoColor=white)
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/Tailwind-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=000)
-![Java](https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=java&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
 ![pip](https://img.shields.io/badge/pip-3775A9?style=for-the-badge&logo=pypi&logoColor=white)
 ![Gunicorn](https://img.shields.io/badge/Gunicorn-499848?style=for-the-badge&logo=gunicorn&logoColor=white)
@@ -19,137 +12,65 @@
 
 </div>
 
-> Projeto integrador de Desenvolvimento Web: um Kanban simples, responsivo e com API REST em Django + DRF.
-
-**Sumário**
-- [Visão Geral](#visão-geral)
-- [Configuração do Ambiente](#configuração-do-ambiente)
-  - [Pré-requisitos](#pré-requisitos)
-  - [Clonar o repositório](#clonar-o-repositório)
-  - [Criar ambiente virtual](#criar-ambiente-virtual)
-  - [Instalar dependências](#instalar-dependências)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-  - [setup/ — Projeto Django](#setup--—-projeto-django)
-  - [apps/core/ — Aplicação Kanban](#appscore--—-aplicação-kanban)
-- [Implementação das Funcionalidades](#implementação-das-funcionalidades)
-  - [1) Configurar `settings.py`](#1-configurar-settingspy)
-  - [2) Modelo `Tarefa` (`models.py`)](#2-modelo-tarefa-modelspy)
-  - [3) Serializer (`serializers.py`)](#3-serializer-serializerspy)
-  - [4) Interface Kanban (`templates/`)](#4-interface-kanban-templates)
-- [Endpoints da API](#endpoints-da-api)
-- [Execução Local](#execução-local)
-- [Deploy no Render](#deploy-no-render)
-  - [Arquivos de configuração](#arquivos-de-configuração)
-  - [Script `build.sh`](#script-buildsh)
-- [Licença e créditos](#licença-e-créditos)
-- [Referências](#referências)
+> API RESTful desenvolvida com Django e Django REST Framework para gerenciamento de tarefas de um time de design.
 
 ---
 
-## Visão Geral
+## 📘 Visão Geral
 
-O **Design Team Flow** é um sistema Kanban para gestão de tarefas, com arrastar-e-soltar (HTML5), atualização periódica (polling) e filtros por texto e data. Backend em **Django** + **Django REST Framework** e frontend com **Tailwind CSS**.
+O **Design Team Flow** é uma API backend que permite **criar, listar, atualizar e excluir tarefas**.  
+Ideal para integrar com sistemas Kanban, dashboards ou qualquer aplicação de gestão de demandas.
 
 ---
 
-## Configuração do Ambiente
+## ⚙️ Configuração do Ambiente
 
-### Pré-requisitos
-- **Python** instalado:
+### ✅ Pré-requisitos
+
+- Python instalado:
 ```bash
 python --version
-```
-
-### Clonar o repositório
-```bash
+📥 Clonar o repositório
 git clone https://github.com/Leninn-Marinho-Rodrigues/API_Django.git
 cd API_Django
-```
 
-### Criar ambiente virtual
-**Windows**
-```bash
+
+🧪 Criar ambiente virtual
+Windows
 python -m venv venv
-venv\Scripts ctivate
-```
+venv\Scripts\activate
 
-**Linux/Mac (incluindo Codespaces)**
-```bash
+
+Linux/Mac
 python -m venv venv
 source venv/bin/activate
-```
 
-> Dica: ao ativar, você verá `(venv)` no início da linha de comando.
 
-### Instalar dependências
-Este projeto usa **pip** com `requirements.txt` (facilita o deploy no Render):
-```bash
+📦 Instalar dependências
 pip install -r requirements.txt
-```
 
----
 
-## Estrutura do Projeto
 
-Segue a organização baseada nas boas práticas MTV do Django, separando configurações globais da lógica de negócio:
-
-```text
+📁 Estrutura do Projeto
 projeto_django/
-├── .venv/                 # Ambiente virtual
-├── db.sqlite3             # Banco de dados (desenvolvimento)
-├── manage.py              # Utilitário de comando do Django
-├── requirements.txt       # Lista de bibliotecas (pip)
-├── build.sh               # Script de deploy para o Render
-├── setup/                 # Pasta do PROJETO principal
-│   ├── __init__.py
-│   ├── settings.py        # Configurações globais (Apps, DB, Middleware)
-│   ├── urls.py            # Rotas principais (Admin, API, Home)
-│   └── wsgi.py            # Entrada para servidor web
-└── apps/                  # Pasta de APLICAÇÕES
-    └── core/              # App principal: Gestão de Tarefas
-        ├── templates/     # Arquivos HTML
-        │   └── interface_kanban.html
-        ├── admin.py       # Configuração do painel administrativo
-        ├── models.py      # Modelo do banco (Tabela Tarefa)
-        ├── serializers.py # Conversão de dados (Model <-> JSON)
-        ├── views.py       # Lógica da API (ViewSets)
-        └── urls.py        # Rotas específicas do App
-```
+├── manage.py
+├── requirements.txt
+├── build.sh
+├── db.sqlite3
+├── setup/
+│   ├── settings.py
+│   └── urls.py
+└── apps/
+    └── core/
+        ├── models.py
+        ├── views.py
+        ├── serializers.py
+        └── urls.py
 
-### `setup/` — Projeto Django
-- `settings.py`: apps instalados, segurança (CSRF/CORS), estáticos e banco.
-- `urls.py`: roteamento geral — `/` carrega o Kanban e `/api/` expõe dados.
 
-### `apps/core/` — Aplicação Kanban
-- `models.py`: estrutura de dados (Tarefas, Tags, Prazos).
-- `views.py`: API REST (GET, POST, PUT, PATCH, DELETE).
-- `templates/`: interface visual com **Tailwind CSS** + JS.
 
----
-
-## Implementação das Funcionalidades
-
-### 1) Configurar `settings.py`
-Instale as apps e ajuste segurança para deploy:
-
-```python
-INSTALLED_APPS = [
-    # ... apps padrão ...
-    'rest_framework',   # API
-    'corsheaders',      # Segurança de acesso
-    'apps.core',        # Nossa aplicação
-]
-
-# Arquivos estáticos (Render)
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-```
-
-### 2) Modelo `Tarefa` (`models.py`)
-Suporta tags e status Kanban:
-
-```python
-from django.db import models
-
+🧩 Implementação das Funcionalidades
+🔧 Modelo Tarefa (models.py)
 class Tarefa(models.Model):
     STATUS_CHOICES = [
         ('TODO', 'A Fazer'),
@@ -159,106 +80,65 @@ class Tarefa(models.Model):
 
     titulo = models.CharField(max_length=200)
     descricao = models.TextField(blank=True, null=True)
-    tags = models.CharField(max_length=255, blank=True, null=True)  # Ex: "Urgente, Instagram"
+    tags = models.CharField(max_length=255, blank=True, null=True)
     prazo = models.DateTimeField()
     status = models.CharField(max_length=5, choices=STATUS_CHOICES, default='TODO')
     criado_em = models.DateTimeField(auto_now_add=True)
-```
 
-### 3) Serializer (`serializers.py`)
-Converte modelo Python ↔ JSON para consumo no frontend:
+
 
-```python
-from rest_framework import serializers
-from .models import Tarefa
-
+🔄 Serializer (serializers.py)
 class TarefaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tarefa
         fields = '__all__'
-```
 
-### 4) Interface Kanban (`templates/`)
-`interface_kanban.html` implementa:
-- **Drag & Drop** nativo (HTML5) para arrastar cartões  
-- **Polling**: atualização automática a cada 3s  
-- **Filtros**: busca por texto, data e navegação por mês  
-- **Design**: estilização responsiva com **Tailwind CSS**
 
----
 
-## Endpoints da API
+🔁 ViewSet (views.py)
+class TarefaViewSet(viewsets.ModelViewSet):
+    queryset = Tarefa.objects.all()
+    serializer_class = TarefaSerializer
 
-Base URL (dev): `http://127.0.0.1:8000/api/`
 
-| Método | Endpoint             | Descrição                                          |
-|:------:|----------------------|----------------------------------------------------|
-| GET    | `/api/tarefas/`      | Lista todas as tarefas (JSON)                     |
-| POST   | `/api/tarefas/`      | Cria uma nova tarefa                              |
-| GET    | `/api/tarefas/{id}/` | Detalhes de uma tarefa específica                 |
-| PUT    | `/api/tarefas/{id}/` | Atualiza uma tarefa completa                      |
-| PATCH  | `/api/tarefas/{id}/` | Atualiza parcial (ex.: mudar status ao arrastar)  |
-| DELETE | `/api/tarefas/{id}/` | Remove uma tarefa                                 |
 
-> Permissões e autenticação podem ser ajustadas via DRF conforme necessidade.
+🔗 Endpoints da API
+Base URL: http://127.0.0.1:8000/api/
+|  |  |  | 
+|  | /api/tarefas/ |  | 
+|  | /api/tarefas/ |  | 
+|  | /api/tarefas/{id}/ |  | 
+|  | /api/tarefas/{id}/ |  | 
+|  | /api/tarefas/{id}/ |  | 
+|  | /api/tarefas/{id}/ |  | 
 
----
 
-## Execução Local
 
-1) **Aplicar migrações**  
-```bash
+▶️ Execução Local
 python manage.py makemigrations
 python manage.py migrate
-```
-
-2) **Criar superusuário (opcional)**  
-```bash
-python manage.py createsuperuser
-```
-
-3) **Rodar servidor**  
-```bash
+python manage.py createsuperuser  # opcional
 python manage.py runserver
-```
 
-4) **Acessar o site**  
-- Kanban: `http://127.0.0.1:8000/`  
-- Admin: `http://127.0.0.1:8000/admin/`
 
----
+- API: http://127.0.0.1:8000/api/
+- Admin: http://127.0.0.1:8000/admin/
+- Swagger: http://127.0.0.1:8000/
 
-## Deploy no Render
-
-Projeto preparado para deploy automático no **Render** com coleta de estáticos e migrações.
-
-### Arquivos de configuração
-- `requirements.txt`: inclui `gunicorn` e bibliotecas do projeto.
-- `build.sh`: instala dependências e executa migrações no servidor.
-
-### Script `build.sh`
-```bash
+🚀 Deploy no Render
+Projeto preparado para deploy automático com coleta de estáticos e migrações.
+Arquivos de configuração
+- requirements.txt — inclui gunicorn e dependências
+- build.sh — script de inicialização
 #!/usr/bin/env bash
-
-# exit on error
 set -o errexit
 
 pip install -r requirements.txt
-
 python manage.py collectstatic --no-input
 python manage.py migrate
-```
 
----
 
-## Licença e créditos
 
-- Desenvolvido como **Projeto Integrador de Desenvolvimento Web**.
-- Repositório: https://github.com/Leninn-Marinho-Rodrigues/API_Django
-
----
-
-## Referências
-
-- Badges gerados via **Shields.io** (logos via Simple Icons e parâmetro `logo`): https://shields.io/docs/logos ; exemplos de uso e estilos: https://shields.io/badges/static-badge  
-- Repositório do professor (organização de conteúdo por seções): https://github.com/claulis/Py  
+📄 Licença e Créditos
+- Desenvolvido por Leninn Marinho Rodrigues como parte do Projeto Integrador de Desenvolvimento Web.
+- Repositório: GitHub
