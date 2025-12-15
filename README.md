@@ -9,6 +9,10 @@
 ![pip](https://img.shields.io/badge/pip-3775A9?style=for-the-badge&logo=pypi&logoColor=white)
 ![Gunicorn](https://img.shields.io/badge/Gunicorn-499848?style=for-the-badge&logo=gunicorn&logoColor=white)
 ![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=000)
+Imagens: 
+<img width="1920" height="1422" alt="image" src="https://github.com/user-attachments/assets/912d7721-486a-4045-8734-7f5b92df7e8a" />
+<img width="1920" height="1312" alt="image" src="https://github.com/user-attachments/assets/9cf7858a-819a-4251-a36f-9d23486a6070" />
+
 
 </div>
 
@@ -140,5 +144,5 @@ python manage.py migrate
 
 
 📄 Licença e Créditos
-- Desenvolvido por Leninn Marinho Rodrigues como parte do Projeto Integrador de Desenvolvimento Web.
+- Desenvolvido por Leninn Marinho Rodrigues como parte do Projeto Integrador.
 - Repositório: GitHub
